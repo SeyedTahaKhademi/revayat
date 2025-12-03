@@ -1,0 +1,15 @@
+[
+  {"slug":"missile","title":"آرشیو نبردهای موشکی","category":"موشکی","image":"https://cdn.ecoiran.com/thumbnail/XWIC6z67LFdk/WG7LExyBK_nbx64THpRbAKAr5OQVuffH8VTA6hkWQ3H8rbOhT46nvNjve4jZUZMexx21ElJhVtttLwUVhzLupmQSwOLznKQNs6abnKdnhWl2g8w8dvs3Fg,,/%D8%AC%D9%86%DA%AF+12+%D8%B1%D9%88%D8%B2%D9%87.jpg","size":"hero"},
+  {"slug":"frontline","title":"تصاویر خطوط مقدم","category":"گزارش تصویری","image":"https://defapress.ir/files/fa/news/1404/7/1/3138511_691.jpg","size":"wide"},
+  {"slug":"analysis","title":"تحلیل‌های میدانی","category":"تحلیل","image":"https://nournews.ir/media/Photo/25/08/25081101002149_Org.jpg","size":"normal"},
+  {"slug":"doc1","title":"نبردهای موشکی","category":"موشکی","image":"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600'%3E%3Crect fill='%235B21B6' width='800' height='600'/%3E%3Ctext x='50%25' y='50%25' font-size='28' fill='white' text-anchor='middle' dominant-baseline='middle'%3Eمستند ۱%3C/text%3E%3C/svg%3E","size":"normal"},
+  {"slug":"doc2","title":"نبردهای موشکی","category":"گزارش تصویری","image":"https://nournews.ir/media/Photo/25/08/25081101002149_Org.jpg","size":"normal"},
+  {"slug":"doc3","title":"مستند ۳","category":"تحلیل","image":"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='800' height='600'%3E%3Crect fill='%23BE185D' width='800' height='600'/%3E%3Ctext x='50%25' y='50%25' font-size='28' fill='white' text-anchor='middle' dominant-baseline='middle'%3Eمستند ۳%3C/text%3E%3C/svg%3E","size":"normal"},
+  {"slug":"gallery-ops","title":"گزارش‌های میدانی","category":"گزارش تصویری","image":"https://cdn-news.inn.ir/photo/1404/04/24/2d8666277eb548f47e427f1fa6a9bfb1-a-i-m.jpg","size":"normal"},
+  {"slug":"frontline-moments","title":"لحظه‌های خط مقدم","category":"گزارش تصویری","image":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTywoedv2z_WzJeYbwDkaLhDQ3IgaSWtj9Npg&s","size":"tall"}
+  ,
+  {"slug":"city-scenes","title":"روایت شهری","category":"گزارش تصویری","image":"https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQcY5VD4ewiekEBhUh_ePmGN_8XXMD1B9tMHQ&s","size":"normal"},
+  {"slug":"city-scenes-2","title":"روایت شهری","category":"گزارش تصویری","image":"https://static.euronews.com/articles/stories/09/46/74/13/808x454_cmsv2_bbc3d300-0413-5bc3-b3f9-0fd2d2a00bb2-9467413.jpg","size":"normal"},
+  {"slug":"border-stories","title":"روایت‌های مرزی","category":"گزارش تصویری","image":"/images/روز نهم.png","size":"normal"}
+
+]
