@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Layout from '@/components/Layout';
 import { useExplore } from '@/components/ExploreContext';
 import type { ExploreComment, ExplorePost } from '@/components/ExploreContext';
@@ -60,7 +60,7 @@ const initials = (value?: string) => {
 const buildCommentDraftKey = (postId: string, parentId?: string) =>
   (parentId ? `${postId}:${parentId}` : `${postId}:root`);
 
-export default function ExplorePage() {
+function ExplorePageContent() {
   const { posts, toggleLike, addComment, createPost, updatePost, deletePost } = useExplore();
   const { currentUser } = useAuth();
   const { profile } = useSettings();
@@ -783,5 +783,13 @@ export default function ExplorePage() {
         )}
       </div>
     </Layout>
+  );
+}
+
+export default function ExplorePage() {
+  return (
+    <Suspense fallback={<Layout><div className="py-12 text-center text-gray-500">در حال بارگذاری...</div></Layout>}>
+      <ExplorePageContent />
+    </Suspense>
   );
 }
