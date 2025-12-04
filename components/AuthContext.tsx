@@ -41,6 +41,7 @@ interface AuthContextValue {
   register: (payload: RegisterPayload) => AuthResult;
   deleteAccount: (accountId: string) => AuthResult;
   promoteToAdmin: (accountId: string) => AuthResult;
+  demoteFromAdmin: (accountId: string) => AuthResult;
 }
 
 const ACCOUNTS_STORAGE_KEY = "revayat.accounts.v1";
@@ -64,6 +65,9 @@ const ensureAdminAccount = (items: Account[]): Account[] => {
   if (hasAdmin) return items;
   return [...items, { ...ADMIN_ACCOUNT }];
 };
+
+const isProtectedAdmin = (acc: Account | undefined) =>
+  acc?.phone === ADMIN_ACCOUNT.phone;
 
 const normalizeAccounts = (data: unknown): Account[] => {
   if (!Array.isArray(data)) {
@@ -276,8 +280,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       if (!target) {
         return { success: false, message: "حساب پیدا نشد." };
       }
-      if (target.role === "admin") {
-        return { success: false, message: "نمی‌توانید ادمین را حذف کنید." };
+      if (isProtectedAdmin(target)) {
+        return { success: false, message: "نمی‌توانید ادمین اصلی را حذف کنید." };
       }
       setAccounts((prev) => prev.filter((acc) => acc.id !== accountId));
       setActiveAccountId((prev) => (prev === accountId ? null : prev));
@@ -305,6 +309,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [accounts]
   );
 
+  const demoteFromAdmin = useCallback(
+    (accountId: string): AuthResult => {
+      const target = accounts.find((acc) => acc.id === accountId);
+      if (!target) {
+        return { success: false, message: "حساب پیدا نشد." };
+      }
+      if (isProtectedAdmin(target)) {
+        return { success: false, message: "نمی‌توانید نقش ادمین اصلی را تغییر دهید." };
+      }
+      if (target.role !== "admin") {
+        return { success: false, message: "این کاربر ادمین نیست." };
+      }
+      setAccounts((prev) =>
+        prev.map((acc) => (acc.id === accountId ? { ...acc, role: "user" } : acc))
+      );
+      return { success: true, message: "حساب به کاربر عادی تبدیل شد." };
+    },
+    [accounts]
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       accounts,
@@ -314,8 +338,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       register,
       deleteAccount,
       promoteToAdmin,
+      demoteFromAdmin,
     }),
-    [accounts, currentUser, login, logout, register, deleteAccount, promoteToAdmin]
+    [accounts, currentUser, login, logout, register, deleteAccount, promoteToAdmin, demoteFromAdmin]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

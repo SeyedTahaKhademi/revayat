@@ -6,7 +6,7 @@ import { useAuth } from '@/components/AuthContext';
 import Link from 'next/link';
 
 export default function AdminPage() {
-  const { currentUser, accounts, deleteAccount, promoteToAdmin } = useAuth();
+  const { currentUser, accounts, deleteAccount, promoteToAdmin, demoteFromAdmin } = useAuth();
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const sortedAccounts = useMemo(
@@ -25,6 +25,11 @@ export default function AdminPage() {
   const handlePromote = (accountId: string) => {
     const result = promoteToAdmin(accountId);
     setFeedback(result.message || (result.success ? 'نقش کاربر به ادمین ارتقا یافت.' : 'عملیات انجام نشد.'));
+  };
+
+  const handleDemote = (accountId: string) => {
+    const result = demoteFromAdmin(accountId);
+    setFeedback(result.message || (result.success ? 'این حساب به کاربر عادی تبدیل شد.' : 'عملیات انجام نشد.'));
   };
 
   if (!currentUser) {
@@ -118,22 +123,31 @@ export default function AdminPage() {
                     {new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium', timeStyle: 'short' }).format(new Date(account.createdAt))}
                   </div>
                 </div>
-                {account.role !== 'admin' && (
-                  <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2">
+                  {account.role !== 'admin' ? (
                     <button
                       onClick={() => handlePromote(account.id)}
                       className="text-sm text-emerald-700 font-semibold rounded-xl border border-emerald-200 px-3 py-1.5"
                     >
                       ارتقا به ادمین
                     </button>
+                  ) : account.id !== 'revayat-admin' ? (
+                    <button
+                      onClick={() => handleDemote(account.id)}
+                      className="text-sm text-yellow-700 font-semibold rounded-xl border border-yellow-200 px-3 py-1.5"
+                    >
+                      تبدیل به کاربر
+                    </button>
+                  ) : null}
+                  {account.id !== 'revayat-admin' && (
                     <button
                       onClick={() => handleDelete(account.id)}
                       className="text-sm text-rose-700 font-semibold rounded-xl border border-rose-200 px-3 py-1.5"
                     >
                       حذف حساب
                     </button>
-                  </div>
-                )}
+                  )}
+                </div>
               </div>
             ))}
           </div>
