@@ -392,7 +392,7 @@ export const ExploreProvider: React.FC<{ children: React.ReactNode }> = ({
         likes: [],
         comments: [],
         createdAt: new Date().toISOString(),
-        origin: "user",
+        origin: USER_ORIGIN,
       };
       setPosts((prev) => [post, ...prev]);
       return { success: true };
