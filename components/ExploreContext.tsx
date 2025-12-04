@@ -79,6 +79,15 @@ type ExploreContextValue = {
 };
 
 const STORAGE_KEY = "revayat.explore.posts.v2";
+const API_BASE_URL =
+  process.env.NEXT_PUBLIC_REVAYAT_API_BASE_URL?.replace(/\/+$/, "") ?? undefined;
+
+const buildApiUrl = (path: string) => {
+  if (!API_BASE_URL) return "";
+  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
+};
+
+const USER_ORIGIN: ExplorePost["origin"] = "user";
 
 const buildSeedPosts = (): ExplorePost[] => {
   const galleryItems = documentItems.filter(
@@ -98,6 +107,17 @@ const buildSeedPosts = (): ExplorePost[] => {
   }));
 };
 
+const mergeWithSeed = (items: ExplorePost[]): ExplorePost[] => {
+  const seed = buildSeedPosts();
+  const merged = [...items];
+  seed.forEach((seedPost) => {
+    if (!merged.some((post) => post.id === seedPost.id)) {
+      merged.push(seedPost);
+    }
+  });
+  return merged;
+};
+
 const readPersistedPosts = (): ExplorePost[] => {
   if (typeof window === "undefined") return buildSeedPosts();
   try {
@@ -105,14 +125,7 @@ const readPersistedPosts = (): ExplorePost[] => {
     if (!raw) return buildSeedPosts();
     const parsed = JSON.parse(raw) as ExplorePost[];
     if (!Array.isArray(parsed)) return buildSeedPosts();
-    const seed = buildSeedPosts();
-    const merged = [...parsed];
-    seed.forEach((seedPost) => {
-      if (!merged.some((post) => post.id === seedPost.id)) {
-        merged.push(seedPost);
-      }
-    });
-    return merged;
+    return mergeWithSeed(parsed);
   } catch {
     return buildSeedPosts();
   }
@@ -121,9 +134,114 @@ const readPersistedPosts = (): ExplorePost[] => {
 const persistPosts = (posts: ExplorePost[]) => {
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(posts));
+    window.localStorage.setItem(
+      STORAGE_KEY,
+      JSON.stringify(posts.filter((post) => post.origin === USER_ORIGIN))
+    );
   } catch {
     /* no-op */
+  }
+};
+
+const normalizeComments = (data: unknown): ExploreComment[] => {
+  if (!Array.isArray(data)) return [];
+  return (data as ExploreComment[])
+    .filter(
+      (comment) =>
+        comment &&
+        typeof comment.id === "string" &&
+        typeof comment.userId === "string" &&
+        typeof comment.authorName === "string" &&
+        typeof comment.body === "string"
+    )
+    .map((comment) => ({
+      ...comment,
+      createdAt: comment.createdAt || new Date().toISOString(),
+    }));
+};
+
+const normalizePosts = (data: unknown): ExplorePost[] => {
+  if (!Array.isArray(data)) return [];
+  return (data as ExplorePost[])
+    .filter(
+      (post) =>
+        post &&
+        typeof post.id === "string" &&
+        typeof post.authorId === "string" &&
+        typeof post.authorName === "string" &&
+        typeof post.caption === "string" &&
+        typeof post.image === "string"
+    )
+    .map((post) => ({
+      ...post,
+      likes: Array.isArray(post.likes)
+        ? post.likes.filter((id): id is string => typeof id === "string")
+        : [],
+      comments: normalizeComments(post.comments),
+      origin: USER_ORIGIN,
+      createdAt: post.createdAt || new Date().toISOString(),
+    }));
+};
+
+const fetchRemotePosts = async (): Promise<ExplorePost[] | null> => {
+  if (!API_BASE_URL) return null;
+  try {
+    const response = await fetch(buildApiUrl("/explore-read.php"), {
+      cache: "no-store",
+    });
+    if (!response.ok) {
+      throw new Error("Failed to read explore posts.");
+    }
+    const payload = await response.json();
+    return mergeWithSeed(normalizePosts(payload));
+  } catch (error) {
+    console.error("Unable to fetch explore posts from remote storage.", error);
+    return null;
+  }
+};
+
+const persistRemotePosts = async (posts: ExplorePost[]) => {
+  if (!API_BASE_URL) return;
+  try {
+    await fetch(buildApiUrl("/explore-store.php"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(
+        posts.filter((post) => post.origin === USER_ORIGIN)
+      ),
+    });
+  } catch (error) {
+    console.error("Unable to persist explore posts remotely.", error);
+  }
+};
+
+const uploadImageToHost = async (
+  image: string,
+  idHint: string
+): Promise<string | null> => {
+  if (!API_BASE_URL) return null;
+  if (!image.startsWith("data:")) return null;
+  try {
+    const response = await fetch(buildApiUrl("/upload-image.php"), {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        data: image,
+        reference: idHint,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error("Upload failed.");
+    }
+    const payload = (await response.json()) as { url?: string };
+    return typeof payload?.url === "string" ? payload.url : null;
+  } catch (error) {
+    console.error("Unable to upload image to host.", error);
+    return null;
   }
 };
 
@@ -142,9 +260,63 @@ export const ExploreProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [posts, setPosts] = useState<ExplorePost[]>(() => readPersistedPosts());
+  const [remoteReady, setRemoteReady] = useState<boolean>(() => !API_BASE_URL);
 
   useEffect(() => {
     persistPosts(posts);
+  }, [posts]);
+
+  useEffect(() => {
+    if (!API_BASE_URL) return;
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const remotePosts = await fetchRemotePosts();
+        if (!cancelled && remotePosts) {
+          setPosts(remotePosts);
+        }
+      } finally {
+        if (!cancelled) {
+          setRemoteReady(true);
+        }
+      }
+    };
+    load();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!API_BASE_URL || !remoteReady) return;
+    persistRemotePosts(posts);
+  }, [posts, remoteReady]);
+
+  useEffect(() => {
+    if (!API_BASE_URL) return;
+    let cancelled = false;
+    const pending = posts.filter(
+      (post) => post.origin === USER_ORIGIN && post.image.startsWith("data:")
+    );
+    if (!pending.length) return;
+
+    const process = async () => {
+      for (const post of pending) {
+        const url = await uploadImageToHost(post.image, post.id);
+        if (!cancelled && url) {
+          setPosts((prev) =>
+            prev.map((item) =>
+              item.id === post.id ? { ...item, image: url } : item
+            )
+          );
+        }
+      }
+    };
+    process();
+
+    return () => {
+      cancelled = true;
+    };
   }, [posts]);
 
   const toggleLike = useCallback(
