@@ -3,6 +3,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState, useEffect, useMemo } from 'react';
 import Layout from '@/components/Layout';
 import CategoryCard from '@/components/categuryCard';
@@ -10,6 +11,36 @@ import carouselData from '@/data/carousel.json';
 import narratives from '@/data/narratives.json';
 import solidarity from '@/data/solidarity_narratives.json';
 import martyrs from '@/data/nuclear_martyrs.json';
+import { useExplore } from '@/components/ExploreContext';
+import { useSave } from '@/components/SaveContext';
+import { Bookmark } from 'lucide-react';
+
+const normalizeImageSrc = (raw?: string) => {
+  if (!raw) return '';
+  let src = raw.trim();
+  const secondData = src.indexOf('data:image', 5);
+  if (secondData > 0) src = src.slice(0, secondData);
+  const strayAttr = src.indexOf("' width=");
+  if (strayAttr > 0) src = src.slice(0, strayAttr);
+  if (
+    src &&
+    !src.startsWith('data:') &&
+    !src.startsWith('http://') &&
+    !src.startsWith('https://') &&
+    !src.startsWith('/')
+  ) {
+    src = `/${src.replace(/^\.*\/?/, '')}`;
+  }
+  return src;
+};
+
+const formatPostDate = (value: string) => {
+  try {
+    return new Intl.DateTimeFormat('fa-IR', { dateStyle: 'medium' }).format(new Date(value));
+  } catch {
+    return value;
+  }
+};
 
 // --- کاروسل تصاویر ---
 const Carousel = () => {
@@ -91,6 +122,32 @@ const Carousel = () => {
 
 // --- بخش اصلی صفحه ---
 export default function Home() {
+  const { posts } = useExplore();
+  const { toggleSave, isSaved } = useSave();
+  const [saveBanner, setSaveBanner] = useState<string | null>(null);
+  const [isMounted, setIsMounted] = useState(false);
+  const featuredExplorePosts = useMemo(() => {
+    if (!isMounted) return [];
+    return [...posts].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 3);
+  }, [posts, isMounted]);
+
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    if (!saveBanner) return;
+    const timeout = setTimeout(() => setSaveBanner(null), 3000);
+    return () => clearTimeout(timeout);
+  }, [saveBanner]);
+
+  const handleSaveNarrative = (postId: string) => {
+    const result = toggleSave(postId);
+    if (result.message) {
+      setSaveBanner(result.message);
+    }
+  };
+
   return (
     <Layout>
       <div className="space-y-10">
@@ -244,6 +301,75 @@ export default function Home() {
               <CategoryCard title="روایات همدلی" href="/solidarity-narratives" iconName="روایات همدلی" />
             </div>
           </div>
+          {saveBanner && (
+            <div className="rounded-2xl border border-gray-100 bg-gray-50 px-4 py-2 text-sm text-gray-700">
+              {saveBanner}
+            </div>
+          )}
+          {featuredExplorePosts.length > 0 && (
+            <div className="rounded-[28px] border border-white/70 bg-white/80 p-4 space-y-4">
+              <div className="flex items-center justify-between text-sm text-gray-600">
+                <span className="font-semibold text-gray-900">روایت‌های تصویری منتخب</span>
+                <Link href="/explore" className="text-rose-600 font-semibold">
+                  همه را ببین
+                </Link>
+              </div>
+              <div className="space-y-3">
+                {featuredExplorePosts.map((post) => (
+                  <article
+                    key={post.id}
+                    className="flex gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-3"
+                  >
+                    <div className="relative h-28 w-28 rounded-2xl overflow-hidden border border-white flex-shrink-0">
+                      <Link
+                        href={`/explore?post=${post.id}`}
+                        className="block h-full w-full relative"
+                      >
+                        <Image
+                          src={normalizeImageSrc(post.image) || '/placeholder.jpg'}
+                          alt={post.caption}
+                          fill
+                          className="object-cover"
+                          sizes="120px"
+                          unoptimized={
+                            typeof post.image === 'string' &&
+                            (post.image.startsWith('http') || post.image.startsWith('data:'))
+                          }
+                        />
+                      </Link>
+                      <button
+                        type="button"
+                        onClick={() => handleSaveNarrative(post.id)}
+                        className={`absolute top-2 left-2 rounded-full border px-2 py-1 text-xs font-semibold backdrop-blur ${
+                          isSaved(post.id)
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : 'bg-white/80 text-gray-700 border-gray-200'
+                        }`}
+                      >
+                        <Bookmark
+                          size={16}
+                          fill={isSaved(post.id) ? 'currentColor' : 'none'}
+                        />
+                      </button>
+                    </div>
+                    <div className="flex-1 space-y-1">
+                      <p className="text-sm font-bold text-gray-900">{post.authorName}</p>
+                      <p className="text-xs text-gray-500 line-clamp-3">{post.caption}</p>
+                      <span className="text-[11px] text-gray-400 block">
+                        {formatPostDate(post.createdAt)}
+                      </span>
+                      <Link
+                        href={`/explore?post=${post.id}`}
+                        className="inline-flex items-center text-xs font-semibold text-rose-600"
+                      >
+                        مشاهده در اکسپلور
+                      </Link>
+                    </div>
+                  </article>
+                ))}
+              </div>
+            </div>
+          )}
         </section>
 
         {/* ۳. معرفی اکسپلور */}

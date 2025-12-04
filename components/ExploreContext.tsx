@@ -53,6 +53,18 @@ type CreatePostPayload = {
   caption: string;
 };
 
+type UpdatePostPayload = {
+  postId: string;
+  authorId: string;
+  caption: string;
+  image?: string;
+};
+
+type DeletePostPayload = {
+  postId: string;
+  authorId: string;
+};
+
 type ExploreContextValue = {
   posts: ExplorePost[];
   addComment: (payload: CommentPayload) => { success: boolean; message?: string };
@@ -62,6 +74,8 @@ type ExploreContextValue = {
     liked?: boolean;
   };
   createPost: (payload: CreatePostPayload) => { success: boolean; message?: string };
+  updatePost: (payload: UpdatePostPayload) => { success: boolean; message?: string };
+  deletePost: (payload: DeletePostPayload) => { success: boolean; message?: string };
 };
 
 const STORAGE_KEY = "revayat.explore.posts.v2";
@@ -214,14 +228,70 @@ export const ExploreProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
+  const updatePost = useCallback(
+    ({ postId, authorId, caption, image }: UpdatePostPayload) => {
+      const trimmed = caption.trim();
+      if (!trimmed) {
+        return { success: false, message: "کپشن را بنویسید." };
+      }
+      let result: { success: boolean; message?: string } = {
+        success: false,
+        message: "پست پیدا نشد.",
+      };
+      setPosts((prev) => {
+        const target = prev.find((post) => post.id === postId);
+        if (!target) {
+          result = { success: false, message: "پست موردنظر پیدا نشد." };
+          return prev;
+        }
+        if (target.authorId !== authorId) {
+          result = { success: false, message: "فقط نویسنده می‌تواند ویرایش کند." };
+          return prev;
+        }
+        result = { success: true };
+        return prev.map((post) =>
+          post.id === postId ? { ...post, caption: trimmed, image: image || post.image } : post
+        );
+      });
+      return result;
+    },
+    []
+  );
+
+  const deletePost = useCallback(
+    ({ postId, authorId }: DeletePostPayload) => {
+      let result: { success: boolean; message?: string } = {
+        success: false,
+        message: "پست پیدا نشد.",
+      };
+      setPosts((prev) => {
+        const target = prev.find((post) => post.id === postId);
+        if (!target) {
+          result = { success: false, message: "پست موردنظر پیدا نشد." };
+          return prev;
+        }
+        if (target.authorId !== authorId) {
+          result = { success: false, message: "فقط نویسنده می‌تواند حذف کند." };
+          return prev;
+        }
+        result = { success: true };
+        return prev.filter((post) => post.id !== postId);
+      });
+      return result;
+    },
+    []
+  );
+
   const value = useMemo<ExploreContextValue>(
     () => ({
       posts,
       addComment,
       toggleLike,
       createPost,
+      updatePost,
+      deletePost,
     }),
-    [posts, addComment, toggleLike, createPost]
+    [posts, addComment, toggleLike, createPost, updatePost, deletePost]
   );
 
   return (

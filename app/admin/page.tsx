@@ -6,7 +6,7 @@ import { useAuth } from '@/components/AuthContext';
 import Link from 'next/link';
 
 export default function AdminPage() {
-  const { currentUser, accounts, deleteAccount } = useAuth();
+  const { currentUser, accounts, deleteAccount, promoteToAdmin } = useAuth();
   const [feedback, setFeedback] = useState<string | null>(null);
 
   const sortedAccounts = useMemo(
@@ -20,6 +20,11 @@ export default function AdminPage() {
   const handleDelete = (accountId: string) => {
     const result = deleteAccount(accountId);
     setFeedback(result.message || (result.success ? 'حساب حذف شد.' : 'عملیات انجام نشد.'));
+  };
+
+  const handlePromote = (accountId: string) => {
+    const result = promoteToAdmin(accountId);
+    setFeedback(result.message || (result.success ? 'نقش کاربر به ادمین ارتقا یافت.' : 'عملیات انجام نشد.'));
   };
 
   if (!currentUser) {
@@ -95,10 +100,14 @@ export default function AdminPage() {
                     {account.role === 'admin' ? 'ادمین' : 'کاربر'}
                   </span>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm text-gray-600">
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-3 text-sm text-gray-600">
                   <div>
                     <span className="block text-[11px] text-gray-500">شماره تلفن</span>
                     {account.phone}
+                  </div>
+                  <div>
+                    <span className="block text-[11px] text-gray-500">رمز عبور</span>
+                    {account.password}
                   </div>
                   <div>
                     <span className="block text-[11px] text-gray-500">جنسیت</span>
@@ -110,7 +119,13 @@ export default function AdminPage() {
                   </div>
                 </div>
                 {account.role !== 'admin' && (
-                  <div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handlePromote(account.id)}
+                      className="text-sm text-emerald-700 font-semibold rounded-xl border border-emerald-200 px-3 py-1.5"
+                    >
+                      ارتقا به ادمین
+                    </button>
                     <button
                       onClick={() => handleDelete(account.id)}
                       className="text-sm text-rose-700 font-semibold rounded-xl border border-rose-200 px-3 py-1.5"

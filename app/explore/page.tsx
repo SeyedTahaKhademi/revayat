@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Layout from '@/components/Layout';
 import { useExplore } from '@/components/ExploreContext';
 import type { ExploreComment, ExplorePost } from '@/components/ExploreContext';
@@ -11,6 +11,7 @@ import { useFollow } from '@/components/FollowContext';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Bookmark, Camera, Heart, MessageCircle, SendHorizontal } from 'lucide-react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 const formatDate = (value: string) => {
   try {
@@ -60,7 +61,7 @@ const buildCommentDraftKey = (postId: string, parentId?: string) =>
   (parentId ? `${postId}:${parentId}` : `${postId}:root`);
 
 export default function ExplorePage() {
-  const { posts, toggleLike, addComment, createPost } = useExplore();
+  const { posts, toggleLike, addComment, createPost, updatePost, deletePost } = useExplore();
   const { currentUser } = useAuth();
   const { profile } = useSettings();
   const { toggleSave, isSaved } = useSave();
@@ -70,7 +71,27 @@ export default function ExplorePage() {
   const [banner, setBanner] = useState<string | null>(null);
   const [composer, setComposer] = useState({ caption: '', image: '' });
   const [selectedPostId, setSelectedPostId] = useState<string | null>(null);
+  const [editMode, setEditMode] = useState(false);
+  const [editDraft, setEditDraft] = useState({ caption: '', image: '' });
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const fileRef = useRef<HTMLInputElement>(null);
+  const editFileRef = useRef<HTMLInputElement>(null);
+  const setPostQueryParam = useCallback(
+    (postId?: string) => {
+      if (!pathname) return;
+      const params = new URLSearchParams(searchParams?.toString());
+      if (postId) {
+        params.set('post', postId);
+      } else {
+        params.delete('post');
+      }
+      const query = params.toString();
+      router.replace(`${pathname}${query ? `?${query}` : ''}`, { scroll: false });
+    },
+    [router, pathname, searchParams]
+  );
 
   const handleLike = (postId: string) => {
     if (!currentUser) {
@@ -168,6 +189,82 @@ export default function ExplorePage() {
     }
   };
 
+  const handleStartEdit = () => {
+    if (!selectedPost) return;
+    if (!currentUser || currentUser.id !== selectedPost.authorId) {
+      setBanner('فقط نویسنده می‌تواند ویرایش کند.');
+      return;
+    }
+    setEditMode(true);
+    setEditDraft({ caption: selectedPost.caption, image: selectedPost.image });
+  };
+
+  const handleCancelEdit = () => {
+    if (selectedPost) {
+      setEditDraft({ caption: selectedPost.caption, image: selectedPost.image });
+    } else {
+      setEditDraft({ caption: '', image: '' });
+    }
+    setEditMode(false);
+    if (editFileRef.current) {
+      editFileRef.current.value = '';
+    }
+  };
+
+  const handleEditImagePick = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setEditDraft((prev) => ({ ...prev, image: (reader.result as string) || prev.image }));
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleSaveEdit = () => {
+    if (!selectedPost) return;
+    if (!currentUser) {
+      setBanner('برای ویرایش باید وارد شوید.');
+      return;
+    }
+    const result = updatePost({
+      postId: selectedPost.id,
+      authorId: currentUser.id,
+      caption: editDraft.caption,
+      image: editDraft.image || selectedPost.image,
+    });
+    if (!result.success) {
+      if (result.message) setBanner(result.message);
+      return;
+    }
+    setBanner('پست ویرایش شد.');
+    setEditMode(false);
+  };
+
+  const handleDeletePost = () => {
+    if (!selectedPost) return;
+    if (!currentUser) {
+      setBanner('برای حذف باید وارد شوید.');
+      return;
+    }
+    if (currentUser.id !== selectedPost.authorId) {
+      setBanner('فقط نویسنده می‌تواند حذف کند.');
+      return;
+    }
+    const confirmed =
+      typeof window !== 'undefined'
+        ? window.confirm('آیا از حذف این پست مطمئن هستید؟')
+        : true;
+    if (!confirmed) return;
+    const result = deletePost({ postId: selectedPost.id, authorId: currentUser.id });
+    if (!result.success) {
+      if (result.message) setBanner(result.message);
+      return;
+    }
+    setBanner('پست حذف شد.');
+    closeModal();
+  };
+
   const cards = useMemo(
     () => [...posts].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)),
     [posts]
@@ -190,12 +287,62 @@ export default function ExplorePage() {
     }, {});
   }, [selectedPost]);
 
+  useEffect(() => {
+    if (selectedPost) {
+      setEditDraft({ caption: selectedPost.caption, image: selectedPost.image });
+    } else {
+      setEditDraft({ caption: '', image: '' });
+    }
+    setEditMode(false);
+    if (editFileRef.current) {
+      editFileRef.current.value = '';
+    }
+  }, [selectedPostId, selectedPost?.caption, selectedPost?.image]);
+
+  useEffect(() => {
+    const queryPost = searchParams?.get('post');
+    if (queryPost && cards.some((post) => post.id === queryPost)) {
+      if (selectedPostId !== queryPost) {
+        setSelectedPostId(queryPost);
+      }
+    } else if (!queryPost && selectedPostId) {
+      setSelectedPostId(null);
+    }
+  }, [searchParams, cards, selectedPostId]);
+
+  const selectPost = useCallback(
+    (postId: string) => {
+      setSelectedPostId(postId);
+      setPostQueryParam(postId);
+    },
+    [setPostQueryParam]
+  );
+
+  const goToSibling = useCallback(
+    (direction: -1 | 1) => {
+      const nextIndex = selectedIndex + direction;
+      if (nextIndex >= 0 && nextIndex < cards.length) {
+        const target = cards[nextIndex];
+        if (target) {
+          selectPost(target.id);
+        }
+      }
+    },
+    [cards, selectedIndex, selectPost]
+  );
+
   const openPost = (post: ExplorePost) => {
-    setSelectedPostId(post.id);
+    selectPost(post.id);
   };
 
   const closeModal = () => {
     setSelectedPostId(null);
+    setPostQueryParam();
+    setEditMode(false);
+    setEditDraft({ caption: '', image: '' });
+    if (editFileRef.current) {
+      editFileRef.current.value = '';
+    }
   };
 
   if (selectedPost) {
@@ -203,6 +350,9 @@ export default function ExplorePage() {
     const rootComposerKey = buildCommentDraftKey(selectedPost.id);
     const rootComposerVisible = composerVisibility[rootComposerKey];
     const rootComments = commentGroups['root'] || [];
+    const displayedImage =
+      editMode && editDraft.image ? editDraft.image : selectedPost.image;
+    const displayedImageSrc = normalizeImageSrc(displayedImage);
     const renderCommentThread = (comment: ExploreComment): React.ReactNode => {
       const replies = commentGroups[comment.id] || [];
       const replyKey = buildCommentDraftKey(selectedPost.id, comment.id);
@@ -276,7 +426,7 @@ export default function ExplorePage() {
             <div className="flex items-center gap-2 text-sm font-semibold">
               {selectedIndex > 0 && (
                 <button
-                  onClick={() => setSelectedPostId(cards[selectedIndex - 1].id)}
+                  onClick={() => goToSibling(-1)}
                   className="rounded-full border border-gray-200 px-3 py-1"
                 >
                   پست قبلی
@@ -284,7 +434,7 @@ export default function ExplorePage() {
               )}
               {selectedIndex < cards.length - 1 && (
                 <button
-                  onClick={() => setSelectedPostId(cards[selectedIndex + 1].id)}
+                  onClick={() => goToSibling(1)}
                   className="rounded-full border border-gray-200 px-3 py-1"
                 >
                   پست بعدی
@@ -296,13 +446,13 @@ export default function ExplorePage() {
             <div className="w-full bg-black rounded-[32px] overflow-hidden">
               <div className="relative w-full pb-[125%]">
                 <Image
-                  src={normalizeImageSrc(selectedPost.image)}
-                  alt={selectedPost.caption}
+                  src={displayedImageSrc}
+                  alt={editMode ? editDraft.caption : selectedPost.caption}
                   fill
                   className="object-cover"
                   sizes="(min-width: 1024px) 40vw, 90vw"
                   unoptimized={
-                    selectedPost.image.startsWith('http') || selectedPost.image.startsWith('data:')
+                    displayedImage.startsWith('http') || displayedImage.startsWith('data:')
                   }
                 />
               </div>
@@ -329,22 +479,89 @@ export default function ExplorePage() {
                     <p className="text-xs text-gray-500">{formatDate(selectedPost.createdAt)}</p>
                   </div>
                 </div>
-                {currentUser?.id !== selectedPost.authorId && (
-                  <button
-                    onClick={() => handleFollowAuthor(selectedPost.authorId)}
-                    className={`rounded-full px-3 py-1 text-xs font-semibold border ${
-                      isFollowing(selectedPost.authorId)
-                        ? 'bg-gray-900 text-white border-gray-900'
-                        : 'border-gray-200 text-gray-700'
-                    }`}
-                  >
-                    {isFollowing(selectedPost.authorId) ? 'دنبال شده' : 'دنبال کردن'}
-                  </button>
-                )}
+                <div className="flex items-center gap-2 flex-wrap justify-end">
+                  {currentUser?.id === selectedPost.authorId ? (
+                    <>
+                      {!editMode && (
+                        <button
+                          onClick={handleStartEdit}
+                          className="rounded-full px-3 py-1 text-xs font-semibold border border-gray-200 text-gray-700"
+                        >
+                          ویرایش پست
+                        </button>
+                      )}
+                      <button
+                        onClick={handleDeletePost}
+                        className="rounded-full px-3 py-1 text-xs font-semibold border border-rose-200 text-rose-600"
+                      >
+                        حذف پست
+                      </button>
+                    </>
+                  ) : (
+                    currentUser && (
+                      <button
+                        onClick={() => handleFollowAuthor(selectedPost.authorId)}
+                        className={`rounded-full px-3 py-1 text-xs font-semibold border ${
+                          isFollowing(selectedPost.authorId)
+                            ? 'bg-gray-900 text-white border-gray-900'
+                            : 'border-gray-200 text-gray-700'
+                        }`}
+                      >
+                        {isFollowing(selectedPost.authorId) ? 'دنبال شده' : 'دنبال کردن'}
+                      </button>
+                    )
+                  )}
+                </div>
               </header>
-              <p className="text-sm text-gray-900 leading-relaxed">
-                <span className="font-bold">{selectedPost.authorName}</span> {selectedPost.caption}
-              </p>
+              {editMode ? (
+                <div className="space-y-3">
+                  <textarea
+                    value={editDraft.caption}
+                    onChange={(e) =>
+                      setEditDraft((prev) => ({ ...prev, caption: e.target.value }))
+                    }
+                    className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm min-h-[90px]"
+                    placeholder="کپشن پست"
+                  />
+                  <div className="flex flex-wrap gap-3 items-center">
+                    <button
+                      type="button"
+                      onClick={() => editFileRef.current?.click()}
+                      className="rounded-full border border-gray-200 bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-700"
+                    >
+                      انتخاب تصویر جدید
+                    </button>
+                    <span className="text-[11px] text-gray-400">
+                      با ذخیره، تصویر فعلی جایگزین می‌شود.
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={handleSaveEdit}
+                      className="rounded-full bg-gray-900 text-white px-4 py-2 text-xs font-semibold"
+                    >
+                      ذخیره تغییرات
+                    </button>
+                    <button
+                      onClick={handleCancelEdit}
+                      className="rounded-full border border-gray-200 px-4 py-2 text-xs font-semibold text-gray-600"
+                    >
+                      انصراف
+                    </button>
+                  </div>
+                  <input
+                    ref={editFileRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleEditImagePick}
+                  />
+                </div>
+              ) : (
+                <p className="text-sm text-gray-900 leading-relaxed">
+                  <span className="font-bold">{selectedPost.authorName}</span> {selectedPost.caption}
+                </p>
+              )}
               <div className="space-y-3 max-h-[40vh] overflow-y-auto pr-1">
                 {rootComments.length === 0 ? (
                   <p className="text-xs text-gray-500">هنوز نظری ثبت نشده است.</p>

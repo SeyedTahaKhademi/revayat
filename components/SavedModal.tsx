@@ -7,6 +7,7 @@ import { useAuth } from './AuthContext';
 import Image from 'next/image';
 import Link from 'next/link';
 import { BookmarkMinus } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 const normalizeImageSrc = (raw?: string) => {
   if (!raw) return '';
@@ -31,6 +32,7 @@ const SavedModal: React.FC = () => {
   const { isModalOpen, closeModal, savedPostIds, toggleSave } = useSave();
   const { posts } = useExplore();
   const { currentUser } = useAuth();
+  const router = useRouter();
 
   const savedPosts = useMemo(
     () => savedPostIds
@@ -40,6 +42,11 @@ const SavedModal: React.FC = () => {
   );
 
   if (!isModalOpen) return null;
+
+  const handleOpenPost = (postId: string) => {
+    closeModal();
+    router.push(`/explore?post=${postId}`);
+  };
 
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center px-4 pb-10 sm:items-center">
@@ -70,7 +77,19 @@ const SavedModal: React.FC = () => {
         {currentUser && savedPosts.length > 0 && (
           <div className="max-h-[60vh] overflow-y-auto space-y-3 pr-1">
             {savedPosts.map((post) => (
-              <div key={post.id} className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-3">
+              <div
+                key={post.id}
+                role="button"
+                tabIndex={0}
+                onClick={() => handleOpenPost(post.id)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleOpenPost(post.id);
+                  }
+                }}
+                className="flex items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50 p-3 cursor-pointer hover:border-gray-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-200"
+              >
                 <div className="h-16 w-16 rounded-2xl overflow-hidden bg-gray-200 flex-shrink-0">
                   <Image
                     src={normalizeImageSrc(post.image) || '/placeholder.jpg'}
@@ -90,7 +109,10 @@ const SavedModal: React.FC = () => {
                 </div>
                 <button
                   className="rounded-full border border-gray-200 px-3 py-1 text-xs font-semibold text-gray-600 flex items-center gap-1"
-                  onClick={() => toggleSave(post.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    toggleSave(post.id);
+                  }}
                 >
                   <BookmarkMinus size={14} />
                   حذف

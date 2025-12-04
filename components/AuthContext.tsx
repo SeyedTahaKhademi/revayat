@@ -40,6 +40,7 @@ interface AuthContextValue {
   logout: () => void;
   register: (payload: RegisterPayload) => AuthResult;
   deleteAccount: (accountId: string) => AuthResult;
+  promoteToAdmin: (accountId: string) => AuthResult;
 }
 
 const ACCOUNTS_STORAGE_KEY = "revayat.accounts.v1";
@@ -219,6 +220,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
     [accounts]
   );
 
+  const promoteToAdmin = useCallback(
+    (accountId: string): AuthResult => {
+      const target = accounts.find((acc) => acc.id === accountId);
+      if (!target) {
+        return { success: false, message: "حساب پیدا نشد." };
+      }
+      if (target.role === "admin") {
+        return { success: false, message: "این حساب از قبل ادمین است." };
+      }
+      setAccounts((prev) =>
+        prev.map((acc) =>
+          acc.id === accountId ? { ...acc, role: "admin" } : acc
+        )
+      );
+      return { success: true, message: "حساب با موفقیت به ادمین ارتقا یافت." };
+    },
+    [accounts]
+  );
+
   const value = useMemo<AuthContextValue>(
     () => ({
       accounts,
@@ -227,8 +247,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       logout,
       register,
       deleteAccount,
+      promoteToAdmin,
     }),
-    [accounts, currentUser, login, logout, register, deleteAccount]
+    [accounts, currentUser, login, logout, register, deleteAccount, promoteToAdmin]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
