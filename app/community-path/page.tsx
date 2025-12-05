@@ -24,9 +24,21 @@ const steps = [
 ];
 
 const resources = [
-  { title: 'راهنمای تولید محتوای روایی', href: '/documents/narrative-guide.pdf' },
-  { title: 'فرم استاندارد جمع‌آوری شواهد', href: '/documents/evidence-template.docx' },
-  { title: 'نکات حقوقی و امنیتی', href: '/documents/legal-safety.pdf' },
+  {
+    title: 'راهنمای تولید محتوای روایی',
+    description: 'اصول داستان‌گویی، تدوین تصویری و تنظیم روایت برای نشر عمومی.',
+    href: '/documents/narrative-guide.pdf',
+  },
+  {
+    title: 'فرم استاندارد جمع‌آوری شواهد',
+    description: 'چک‌لیست مصاحبه، ثبت متادیتای فایل‌ها و قالب پیشنهادی ضمیمه‌ها.',
+    href: '/documents/evidence-template.docx',
+  },
+  {
+    title: 'نکات حقوقی و امنیتی',
+    description: 'توصیه‌های مربوط به رضایت آگاهانه، حریم خصوصی و امنیت دیجیتال.',
+    href: '/documents/legal-safety.pdf',
+  },
 ];
 
 export default function CommunityPathPage() {
@@ -140,21 +152,29 @@ export default function CommunityPathPage() {
           )}
         </section>
 
-        <section className="rounded-3xl bg-gray-900 text-white p-6 space-y-3">
-          <h2 className="text-xl font-black">منابع پیشنهادی</h2>
-          <p className="text-sm text-white/70">فایل‌های زیر برای آماده‌سازی روایت در اختیار شماست:</p>
-          <ul className="space-y-2">
+        <section className="rounded-3xl bg-gray-900 text-white p-6 space-y-4">
+          <div className="space-y-1">
+            <h2 className="text-xl font-black">منابع پیشنهادی</h2>
+            <p className="text-sm text-white/70">
+              فایل‌های آموزشی و نمونه مستندات که قبل از ارسال روایت می‌توانید دانلود و مرور کنید.
+            </p>
+          </div>
+          <div className="grid gap-3 md:grid-cols-3">
             {resources.map((item) => (
-              <li key={item.title}>
+              <div key={item.title} className="rounded-2xl border border-white/15 bg-white/5 p-4 space-y-2">
+                <div>
+                  <h3 className="font-semibold text-white">{item.title}</h3>
+                  <p className="text-xs text-white/70 leading-relaxed">{item.description}</p>
+                </div>
                 <Link
                   href={item.href}
-                  className="inline-flex items-center gap-2 rounded-full border border-white/30 px-4 py-2 text-sm text-white hover:bg-white/10"
+                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/40 px-3 py-1.5 text-xs text-white hover:bg-white/10"
                 >
-                  {item.title}
+                  دانلود منبع
                 </Link>
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
       </div>
     </Layout>
