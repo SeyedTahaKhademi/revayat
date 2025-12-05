@@ -163,16 +163,12 @@ export default function Home() {
               این دکلمه، تصویرِ لحظه‌هایی‌ست که فراموش نمی‌شوند.
             </p>
             <div className="pt-2">
-              <button
-                onClick={() => {
-                  const el = document.getElementById('explore-intro');
-                  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }}
+              <Link
+                href="/community-path"
                 className="inline-block rounded-full bg-white text-rose-600 px-5 py-2 text-sm font-semibold hover:bg-white/90"
-                type="button"
               >
-                دیدن روایت تصویری
-              </button>
+                مسیر مشارکت اجتماعی
+              </Link>
             </div>
           </div>
         </section>
