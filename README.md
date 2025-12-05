@@ -1,4 +1,4 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+این پروژه متعلق به **گروه توسعه روایت تیم شهید بابایی** است و تحت شرایط درج‌شده در فایل `LICENSE.md` استفاده می‌شود. لطفاً هرگونه کپی‌برداری یا توزیع را با تیم هماهنگ کنید.
 
 ## Getting Started
 
