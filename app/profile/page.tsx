@@ -6,6 +6,7 @@ import { useAuth } from '@/components/AuthContext';
 import { useExplore } from '@/components/ExploreContext';
 import { useSettings } from '@/components/SettingsContext';
 import { useFollow } from '@/components/FollowContext';
+import { useStories } from '@/components/StoryContext';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -39,9 +40,23 @@ const initials = (value?: string) => {
     .toUpperCase();
 };
 
+const storyTimeRemaining = (value: string) => {
+  try {
+    const created = new Date(value).getTime();
+    if (Number.isNaN(created)) return 'نامشخص';
+    const diff = 24 * 60 * 60 * 1000 - (Date.now() - created);
+    if (diff <= 0) return 'منقضی شده';
+    const hours = Math.ceil(diff / 3600000);
+    return `${hours} ساعت تا پایان`;
+  } catch {
+    return 'نامشخص';
+  }
+};
+
 export default function ProfilePage() {
   const { currentUser, login, register, logout, accounts } = useAuth();
   const { posts, createPost } = useExplore();
+  const { stories, addStory } = useStories();
   const { profile, setProfile } = useSettings();
   const { getFollowers, getFollowing, toggleFollow, isFollowing } = useFollow();
 
@@ -58,12 +73,18 @@ export default function ProfilePage() {
   const [authSuccess, setAuthSuccess] = useState<string | null>(null);
   const [composer, setComposer] = useState({ caption: '', image: '' });
   const postInputRef = useRef<HTMLInputElement>(null);
+  const [storyComposer, setStoryComposer] = useState({ caption: '', media: '' });
+  const storyInputRef = useRef<HTMLInputElement>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [openList, setOpenList] = useState<'followers' | 'following' | null>(null);
 
   const myPosts = useMemo(
     () => (currentUser ? posts.filter((post) => post.authorId === currentUser.id) : []),
     [posts, currentUser]
+  );
+  const myStories = useMemo(
+    () => (currentUser ? stories.filter((story) => story.authorId === currentUser.id) : []),
+    [stories, currentUser]
   );
   const postsCount = myPosts.length;
   const followerIds = useMemo(
@@ -133,6 +154,16 @@ export default function ProfilePage() {
     reader.readAsDataURL(file);
   };
 
+  const handleStoryImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      setStoryComposer((prev) => ({ ...prev, media: reader.result as string }));
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSharePost = () => {
     if (!currentUser) {
       setAuthError('برای ارسال پست ابتدا وارد شوید.');
@@ -157,6 +188,32 @@ export default function ProfilePage() {
     setAuthSuccess('پست شما ذخیره و در اکسپلور نمایش داده شد.');
     setComposer({ caption: '', image: '' });
     if (postInputRef.current) postInputRef.current.value = '';
+  };
+
+  const handleShareStory = () => {
+    if (!currentUser) {
+      setAuthError('برای ارسال استوری ابتدا وارد شوید.');
+      return;
+    }
+    if (!storyComposer.media) {
+      setAuthError('تصویر یا ویدیو برای استوری انتخاب نشده است.');
+      return;
+    }
+    const result = addStory({
+      authorId: currentUser.id,
+      authorName: currentUser.username,
+      authorAvatar: profile.avatar,
+      media: storyComposer.media,
+      caption: storyComposer.caption,
+    });
+    if (!result.success) {
+      setAuthError(result.message || 'استوری ارسال نشد.');
+      return;
+    }
+    setAuthError(null);
+    setAuthSuccess('استوری شما ثبت شد و به مدت ۲۴ ساعت نمایش داده می‌شود.');
+    setStoryComposer({ caption: '', media: '' });
+    if (storyInputRef.current) storyInputRef.current.value = '';
   };
 
   const handleManageFollow = (targetId: string) => {
@@ -522,6 +579,86 @@ export default function ProfilePage() {
                   </div>
                 )}
                 <input ref={postInputRef} type="file" accept="image/*" className="hidden" onChange={handleComposerImage} />
+              </div>
+            </section>
+
+            <section className="rounded-[32px] border border-white/60 bg-white/90 p-5 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-lg font-bold">استوری ۲۴ ساعته</h2>
+                <span className="text-xs text-gray-500">{myStories.length} استوری فعال</span>
+              </div>
+              <div className="space-y-3">
+                <textarea
+                  value={storyComposer.caption}
+                  onChange={(e) => setStoryComposer((prev) => ({ ...prev, caption: e.target.value }))}
+                  placeholder="کپشن یا متن کوتاه برای استوری..."
+                  className="w-full rounded-2xl border border-gray-200 bg-gray-50 px-3 py-2 text-sm min-h-[70px]"
+                />
+                <div className="flex flex-col md:flex-row gap-3">
+                  <button
+                    type="button"
+                    onClick={() => storyInputRef.current?.click()}
+                    className="flex-1 rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3 text-sm font-semibold"
+                  >
+                    {storyComposer.media ? 'تعویض مدیا' : 'انتخاب تصویر یا ویدیو'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleShareStory}
+                    className="flex-1 rounded-2xl bg-rose-600 text-white px-4 py-3 text-sm font-bold"
+                  >
+                    انتشار استوری
+                  </button>
+                </div>
+                <input
+                  ref={storyInputRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleStoryImage}
+                />
+                {storyComposer.media && (
+                  <div className="rounded-2xl border border-gray-100 overflow-hidden">
+                    <Image
+                      src={normalizeImageSrc(storyComposer.media)}
+                      alt="پیش‌نمایش استوری"
+                      width={900}
+                      height={900}
+                      className="w-full h-56 object-cover"
+                      unoptimized
+                    />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                {myStories.length === 0 ? (
+                  <p className="text-sm text-gray-500">
+                    هنوز استوری فعالی ندارید. استوری‌ها به‌طور خودکار پس از ۲۴ ساعت حذف می‌شوند.
+                  </p>
+                ) : (
+                  myStories.map((story) => (
+                    <div
+                      key={story.id}
+                      className="flex items-center justify-between rounded-2xl border border-gray-100 bg-gray-50 px-3 py-2"
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="h-12 w-12 rounded-2xl overflow-hidden bg-gray-200">
+                          <img
+                            src={normalizeImageSrc(story.media)}
+                            alt={story.caption || 'استوری'}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="space-y-1">
+                          <p className="text-sm font-semibold text-gray-900 line-clamp-1">
+                            {story.caption || 'استوری بدون کپشن'}
+                          </p>
+                          <p className="text-xs text-gray-500">{storyTimeRemaining(story.createdAt)}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </section>
 

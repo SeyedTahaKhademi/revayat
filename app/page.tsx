@@ -13,6 +13,8 @@ import solidarity from '@/data/solidarity_narratives.json';
 import martyrs from '@/data/nuclear_martyrs.json';
 import { useExplore } from '@/components/ExploreContext';
 import { useSave } from '@/components/SaveContext';
+import { useStories } from '@/components/StoryContext';
+import type { Story } from '@/components/StoryContext';
 import { Bookmark } from 'lucide-react';
 
 const normalizeImageSrc = (raw?: string) => {
@@ -120,16 +122,92 @@ const Carousel = () => {
   );
 };
 
+const StoryViewer = ({
+  story,
+  onClose,
+}: {
+  story: Story;
+  onClose: () => void;
+}) => {
+  const mediaSrc = normalizeImageSrc(story.media);
+  const avatarSrc = normalizeImageSrc(story.authorAvatar);
+  const initialsFallback =
+    story.authorName
+      .split(" ")
+      .map((part) => part[0])
+      .slice(0, 2)
+      .join("") || "Story";
+
+  return (
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center bg-black/70 p-4"
+      onClick={onClose}
+    >
+      <div
+        className="relative w-full max-w-md overflow-hidden rounded-3xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+      >
+        <button
+          onClick={onClose}
+          className="absolute right-3 top-3 z-10 rounded-full bg-black/30 px-2 py-1 text-sm text-white"
+          type="button"
+        >
+          ×
+        </button>
+        <img
+          src={mediaSrc}
+          alt={story.authorName}
+          className="h-72 w-full object-cover"
+        />
+        <div className="p-4 space-y-2">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-full border border-gray-200 overflow-hidden bg-gray-100 flex items-center justify-center text-sm font-semibold text-gray-600">
+              {avatarSrc ? (
+                <img
+                  src={avatarSrc}
+                  alt={story.authorName}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                initialsFallback
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-bold text-gray-900">
+                {story.authorName}
+              </p>
+              <p className="text-xs text-gray-500">
+                {relativeTime(story.createdAt)}
+              </p>
+            </div>
+          </div>
+          {story.caption && (
+            <p className="text-sm text-gray-700 leading-relaxed">
+              {story.caption}
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // --- بخش اصلی صفحه ---
 export default function Home() {
   const { posts } = useExplore();
   const { toggleSave, isSaved } = useSave();
+  const { stories } = useStories();
   const [saveBanner, setSaveBanner] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [activeStoryId, setActiveStoryId] = useState<string | null>(null);
   const featuredExplorePosts = useMemo(() => {
     if (!isMounted) return [];
     return [...posts].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 3);
   }, [posts, isMounted]);
+  const activeStory = useMemo(
+    () => stories.find((story) => story.id === activeStoryId),
+    [stories, activeStoryId]
+  );
 
   useEffect(() => {
     setIsMounted(true);
@@ -151,6 +229,9 @@ export default function Home() {
   return (
     <Layout>
       <div className="space-y-10">
+        {activeStory && (
+          <StoryViewer story={activeStory} onClose={() => setActiveStoryId(null)} />
+        )}
         {/* قهرمان صفحه اصلی ساده‌شده */}
         <section className="space-y-6">
           <div className="rounded-[28px] bg-gradient-to-br from-rose-500 to-orange-400 p-6 md:p-8 text-white shadow-2xl space-y-4 text-center">
@@ -178,40 +259,53 @@ export default function Home() {
             <h2 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
               Storyline
             </h2>
-            <Link href="/explore" className="text-xs font-semibold text-rose-500">
-              مشاهده همه
-            </Link>
+            <div className="flex items-center gap-3">
+              <Link href="/profile" className="text-xs font-semibold text-gray-500">
+                افزودن استوری
+              </Link>
+              <Link href="/explore" className="text-xs font-semibold text-rose-500">
+                مشاهده همه
+              </Link>
+            </div>
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-2">
-            {sampleStories.map((story) => (
-              <div
-                key={story.id}
-                className="flex flex-col items-center gap-2 min-w-[110px]"
-              >
-                <div className="h-24 w-24 rounded-full border-2 border-rose-400 p-0.5 bg-gradient-to-br from-rose-400 to-orange-300">
-                  <div className="h-full w-full rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-[11px] text-gray-500">
-                    {story.image ? (
-                      <img
-                        src={normalizeImageSrc(story.image)}
-                        alt={story.author}
-                        className="h-full w-full object-cover"
-                      />
-                    ) : (
-                      'Story'
-                    )}
+          {stories.length ? (
+            <div className="flex gap-4 overflow-x-auto pb-2">
+              {stories.map((story) => (
+                <button
+                  key={story.id}
+                  onClick={() => setActiveStoryId(story.id)}
+                  className="flex flex-col items-center gap-2 min-w-[110px] focus:outline-none"
+                  type="button"
+                >
+                  <div className="h-24 w-24 rounded-full border-2 border-rose-400 p-0.5 bg-gradient-to-br from-rose-400 to-orange-300">
+                    <div className="h-full w-full rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-[11px] text-gray-500">
+                      {story.media ? (
+                        <img
+                          src={normalizeImageSrc(story.media)}
+                          alt={story.authorName}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        story.authorName[0]
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="text-center">
-                  <p className="text-xs font-semibold text-gray-900 line-clamp-1">
-                    {story.author}
-                  </p>
-                  <p className="text-[11px] text-gray-500 line-clamp-1">
-                    {story.subtitle}
-                  </p>
-                </div>
-              </div>
-            ))}
-          </div>
+                  <div className="text-center">
+                    <p className="text-xs font-semibold text-gray-900 line-clamp-1">
+                      {story.authorName}
+                    </p>
+                    <p className="text-[11px] text-gray-500 line-clamp-1">
+                      {relativeTime(story.createdAt)}
+                    </p>
+                  </div>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-2xl border border-dashed border-gray-200 bg-white/70 px-4 py-6 text-center text-sm text-gray-500">
+              هنوز استوری فعالی وجود ندارد. از طریق پروفایل خود یک استوری تصویری ثبت کنید.
+            </div>
+          )}
         </section>
 
         {/* جستجوی سراسری مینیمال */}
@@ -413,23 +507,16 @@ export default function Home() {
     </Layout>
   );
 }
-const sampleStories = [
-  {
-    id: 'story-1',
-    author: 'روایت کوچه شهدا',
-    subtitle: 'روز اول مقاومت',
-    image: '/images/story-placeholder-1.jpg',
-  },
-  {
-    id: 'story-2',
-    author: 'گزارش نخلستان',
-    subtitle: 'عکس‌های پشت صحنه',
-    image: '/images/story-placeholder-2.jpg',
-  },
-  {
-    id: 'story-3',
-    author: 'یادداشت آرش',
-    subtitle: 'نامه‌ای برای مادر',
-    image: '/images/story-placeholder-3.jpg',
-  },
-];
+const relativeTime = (value: string) => {
+  try {
+    const target = new Date(value).getTime();
+    if (Number.isNaN(target)) return '';
+    const diff = Date.now() - target;
+    const hours = Math.floor(diff / 3600000);
+    if (hours <= 0) return 'چند لحظه پیش';
+    if (hours < 24) return `${hours} ساعت پیش`;
+    return `${Math.floor(hours / 24)} روز پیش`;
+  } catch {
+    return '';
+  }
+};

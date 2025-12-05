@@ -7,6 +7,7 @@ import { AuthProvider } from "@/components/AuthContext";
 import { SaveProvider } from "@/components/SaveContext";
 import { FollowProvider } from "@/components/FollowContext";
 import { ExploreProvider } from "@/components/ExploreContext";
+import { StoryProvider } from "@/components/StoryContext";
 
 export const metadata: Metadata = {
   title: "روایات | شهدای ۱۲ روزه",
@@ -37,9 +38,11 @@ export default function RootLayout({
           <SaveProvider>
             <FollowProvider>
               <ExploreProvider>
-                <SettingsProvider>
-                  {children}
-                </SettingsProvider>
+                <StoryProvider>
+                  <SettingsProvider>
+                    {children}
+                  </SettingsProvider>
+                </StoryProvider>
               </ExploreProvider>
             </FollowProvider>
           </SaveProvider>
