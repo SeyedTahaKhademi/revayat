@@ -51,18 +51,18 @@ const StoryViewerContent = () => {
   const [feedback, setFeedback] = useState<string | null>(null);
   const touchStartX = useRef<number | null>(null);
 
+  const storyParam = searchParams?.get('story') ?? null;
   const story = stories[activeIndex];
 
   useEffect(() => {
     if (!stories.length) return;
-    const id = searchParams?.get('story');
-    if (!id) {
+    if (!storyParam) {
       setActiveIndex(0);
       return;
     }
-    const idx = stories.findIndex((item) => item.id === id);
+    const idx = stories.findIndex((item) => item.id === storyParam);
     setActiveIndex(idx >= 0 ? idx : 0);
-  }, [stories, searchParams]);
+  }, [stories, storyParam]);
 
   useEffect(() => {
     if (!feedback) return;
@@ -71,11 +71,12 @@ const StoryViewerContent = () => {
   }, [feedback]);
 
   useEffect(() => {
+    if (typeof window === 'undefined') return;
     if (!story) return;
-    const params = new URLSearchParams(searchParams?.toString());
+    const params = new URLSearchParams(window.location.search);
     params.set('story', story.id);
     router.replace(`/stories?${params.toString()}`, { scroll: false });
-  }, [story, router, searchParams]);
+  }, [story?.id, router]);
 
   useEffect(() => {
     setMessage('');
