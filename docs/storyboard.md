@@ -1,26 +1,26 @@
-# Storyboard & Collaboration Playbook
+# استوری‌بورد و مراحل توسعه
 
-## Hero & Storyline
-- Home hero CTA links to **مسیر مشارکت اجتماعی** for user onboarding.
-- Storyline strip: users view latest stories; link opens `/stories`.
-- Dedicated story viewer supports swipe navigation, likes, and private replies.
+## ۱. قهرمان صفحه و استوری‌لاین
+- هرووی اصلی کاربر را به **مسیر مشارکت اجتماعی** می‌برد تا روایت خود را ثبت کند.
+- نوار استوری‌ها در هوم، آخرین روایت‌های تصویری را نشان می‌دهد و با کلیک، کاربر را به `/stories` می‌برد.
+- صفحه‌ی `/stories` مانند اینستاگرام است: می‌توان استوری‌ها را با سوایپ چپ/راست دید، لایک کرد و پیام خصوصی فرستاد.
 
-## Community Participation Flow
-1. **Idea & Media** – share prompt in `/community-path`.
-2. **Form Submit** – simple form captures participant info.
-3. **Explore Sync** – stories/posts stored in JSON via cPanel API.
-4. **Dashboard** – admin manages accounts, promotes/demotes roles.
+## ۲. مسیر مشارکت اجتماعی
+1. **ایده‌پردازی**: در صفحه‌ی `/community-path` کاربران با مراحل و منابع آشنا می‌شوند.
+2. **جمع‌آوری داده**: فرم و راهنما توضیح می‌دهد چه مدیا و اطلاعاتی باید ارسال شود.
+3. **ارسال به اکسپلور**: داده‌ها از طریق API روی هاست cPanel (فایل‌های JSON) ذخیره و در اکسپلور و استوری‌لاین نمایش داده می‌شود.
+4. **مدیریت ادمین**: ادمین می‌تواند کاربران را ارتقا/تنزل دهد، حساب‌ها را حذف کند و روند مشارکت را کنترل نماید.
 
-## Story Author Experience (Profile)
-- Authenticated users upload stories (24h TTL).
-- Tools: preview, edit, delete, tracking remaining time.
-- Posts & follows remain side-by-side for a social feel.
+## ۳. تجربهٔ صاحب استوری در پروفایل
+- کاربران واردشده می‌توانند استوری ۲۴ ساعته بسازند؛ هر استوری قابلیت پیش‌نمایش، ویرایش و حذف دارد.
+- زمان باقیمانده هر استوری نمایش داده می‌شود و پس از ۲۴ ساعت به صورت خودکار پاک می‌شود.
+- بخش پست‌ها و دنبال‌کننده‌ها در کنار مدیریت استوری قرار دارد تا حس یک شبکه‌ی اجتماعی کامل ایجاد شود.
 
-## Remote Storage
-- cPanel API (`remote-api/`) handles users, posts, stories, uploads.
-- Env var `NEXT_PUBLIC_REVAYAT_API_BASE_URL` configures access.
+## ۴. ذخیره‌سازی ریموت
+- تمام داده‌های کاربران، پست‌ها، استوری‌ها و فایل‌ها توسط اسکریپت‌های موجود در `remote-api/` روی هاست cPanel ذخیره می‌شوند.
+- متغیر محیطی `NEXT_PUBLIC_REVAYAT_API_BASE_URL` در ورسل مشخص می‌کند API از کدام دامنه خوانده/نوشته شود.
 
-## Next Steps
-- Expand story replies into notifications.
-- Automate cleanup & analytics for expiring stories.
-- Connect Community Path form to cPanel API for submissions.
+## ۵. گام‌های بعدی
+- اضافه‌کردن نوتیفیکیشن برای پیام‌ها و لایک‌های استوری.
+- ثبت گزارش و تحلیل برای استوری‌هایی که منقضی می‌شوند.
+- متصل کردن فرم مسیر مشارکت به API تا اطلاعات مشارکت‌کنندگان هم در JSON ذخیره شود.
