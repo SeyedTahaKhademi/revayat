@@ -7,8 +7,11 @@ declare(strict_types=1);
 
 function bootstrap(array $allowedMethods = ['GET']): void
 {
-    header('Access-Control-Allow-Origin: *');
-    header('Access-Control-Allow-Headers: Content-Type, X-Requested-With');
+    $origin = $_SERVER['HTTP_ORIGIN'] ?? '*';
+    header('Vary: Origin');
+    header('Access-Control-Allow-Origin: ' . ($origin ?: '*'));
+    header('Access-Control-Allow-Credentials: false');
+    header('Access-Control-Allow-Headers: Content-Type, X-Requested-With, Authorization');
     header(
         'Access-Control-Allow-Methods: ' .
         implode(',', array_unique(array_merge($allowedMethods, ['OPTIONS'])))
