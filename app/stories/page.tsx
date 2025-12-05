@@ -101,7 +101,7 @@ const StoryViewerContent = () => {
       return;
     }
     const result = toggleStoryLike(story.id, currentUser.id);
-    setFeedback(result.message || (result.liked ? 'استوری پسند شد.' : 'پسند حذف شد.'));
+    setFeedback(result.message ?? (result.liked ? 'استوری پسند شد.' : 'پسند حذف شد.'));
   };
 
   const handleSendMessage = () => {
@@ -116,11 +116,11 @@ const StoryViewerContent = () => {
       message,
     });
     if (!result.success) {
-      setFeedback(result.message || 'پیام ارسال نشد.');
+      setFeedback(result.message ?? 'پیام ارسال نشد.');
       return;
     }
     setMessage('');
-    setFeedback(result.message);
+    setFeedback(result.message ?? 'پیام ارسال شد.');
   };
 
   const liked = story && currentUser ? story.likes.includes(currentUser.id) : false;
