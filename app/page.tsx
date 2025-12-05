@@ -368,34 +368,6 @@ export default function Home() {
           )}
         </section>
 
-        {/* ۳. معرفی اکسپلور */}
-        <section id="explore-intro" className="space-y-5">
-          <div className="rounded-[32px] border border-white/60 bg-white/90 p-6 md:p-8 shadow-xl flex flex-col gap-6 lg:flex-row lg:items-center">
-            <div className="flex-1 space-y-3">
-              <p className="text-xs uppercase tracking-[0.3em] text-gray-500">Explore</p>
-              <h2 className="text-2xl md:text-3xl font-black text-gray-900">اکسپلور جدید روایت</h2>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                همه روایت‌های تصویری و گالری‌ها از هوم پیج به اکسپلور منتقل شده‌اند تا بتوانید آن‌ها را با لایک و کامنت دنبال کنید،
-                روی موبایل (APK + WebView) ارائه دهید و با حساب‌های مجزا پیش بروید. حتی ادمین پیش‌فرض می‌تواند کاربران را مدیریت کند.
-              </p>
-              <div className="flex flex-wrap gap-3">
-                <Link href="/explore" className="rounded-full bg-gray-900 text-white px-5 py-2 text-sm font-semibold">
-                  رفتن به اکسپلور
-                </Link>
-                <Link href="/auth" className="rounded-full border border-gray-300 px-5 py-2 text-sm font-semibold text-gray-900">
-                  ساخت حساب تازه
-                </Link>
-              </div>
-            </div>
-            <div className="flex-1 grid grid-cols-2 gap-3">
-              {Array.from({ length: 4 }).map((_, idx) => (
-                <div key={`explore-preview-${idx}`} className="aspect-video rounded-3xl border border-gray-200 bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center text-gray-400 text-xs font-semibold">
-                  {idx < 2 ? 'گالری اکسپلور' : 'کامنت + لایک'}
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
       </div>
     </Layout>
   );
