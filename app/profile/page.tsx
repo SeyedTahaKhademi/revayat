@@ -8,7 +8,6 @@ import { useSettings } from '@/components/SettingsContext';
 import { useFollow } from '@/components/FollowContext';
 import { useStories } from '@/components/StoryContext';
 import type { Story } from '@/components/StoryContext';
-import { useStories } from '@/components/StoryContext';
 import Link from 'next/link';
 import Image from 'next/image';
 
