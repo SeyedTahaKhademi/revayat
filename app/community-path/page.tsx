@@ -74,9 +74,6 @@ export default function CommunityPathPage() {
         <section className="rounded-3xl border border-dashed border-slate-200 bg-white/90 p-6 shadow-sm space-y-4">
           <div className="space-y-2 text-center">
             <h2 className="text-2xl font-black text-gray-900">فرم ارسال مشارکت</h2>
-            <p className="text-sm text-gray-600">
-              این فرم صرفاً جهت هماهنگی است. فایل‌های اصلی را از طریق صفحه اکسپلور منتشر کنید تا در JSON ذخیره شوند.
-            </p>
           </div>
           {submitted ? (
             <div className="rounded-2xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-emerald-800 text-sm">
