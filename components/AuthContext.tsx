@@ -47,10 +47,6 @@ interface AuthContextValue {
 
 const ACCOUNTS_STORAGE_KEY = "revayat.accounts.v1";
 const ACTIVE_ACCOUNT_STORAGE_KEY = "revayat.activeAccountId";
-const API_BASE_URL = process.env.NEXT_PUBLIC_REVAYAT_API_BASE_URL
-  ? "/api/remote"
-  : undefined;
-
 const ADMIN_ACCOUNT: Account = {
   id: "revayat-admin",
   username: "ادمین روایت",
@@ -116,43 +112,6 @@ const createId = () => {
 
 const AuthContext = createContext<AuthContextValue | undefined>(undefined);
 
-const buildApiUrl = (path: string) => {
-  if (!API_BASE_URL) return "";
-  return `${API_BASE_URL}${path.startsWith("/") ? path : `/${path}`}`;
-};
-
-const fetchRemoteAccounts = async (): Promise<Account[] | null> => {
-  if (!API_BASE_URL) return null;
-  try {
-    const response = await fetch(buildApiUrl("/read.php"), {
-      cache: "no-store",
-    });
-    if (!response.ok) {
-      throw new Error("Failed to fetch remote accounts");
-    }
-    const payload = await response.json();
-    return ensureAdminAccount(normalizeAccounts(payload));
-  } catch (error) {
-    console.error("Unable to read accounts from remote storage.", error);
-    return null;
-  }
-};
-
-const persistRemoteAccounts = async (accounts: Account[]) => {
-  if (!API_BASE_URL) return;
-  try {
-    await fetch(buildApiUrl("/store.php"), {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(accounts),
-    });
-  } catch (error) {
-    console.error("Unable to write accounts to remote storage.", error);
-  }
-};
-
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -160,7 +119,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [activeAccountId, setActiveAccountId] = useState<string | null>(() =>
     readActiveAccount()
   );
-  const [remoteReady, setRemoteReady] = useState<boolean>(() => !API_BASE_URL);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -173,27 +131,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
       /* no-op */
     }
   }, [accounts]);
-
-  useEffect(() => {
-    if (!API_BASE_URL) return;
-    let cancelled = false;
-    const load = async () => {
-      const remoteAccounts = await fetchRemoteAccounts();
-      if (!cancelled && remoteAccounts) {
-        setAccounts(remoteAccounts);
-        setRemoteReady(true);
-      }
-    };
-    load();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!API_BASE_URL || !remoteReady) return;
-    persistRemoteAccounts(accounts);
-  }, [accounts, remoteReady]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
