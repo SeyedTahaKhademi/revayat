@@ -80,8 +80,9 @@ type ExploreContextValue = {
 };
 
 const STORAGE_KEY = "revayat.explore.posts.v2";
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_REVAYAT_API_BASE_URL?.replace(/\/+$/, "") ?? undefined;
+const API_BASE_URL = process.env.NEXT_PUBLIC_REVAYAT_API_BASE_URL
+  ? "/api/remote"
+  : undefined;
 
 const buildApiUrl = (path: string) => {
   if (!API_BASE_URL) return "";

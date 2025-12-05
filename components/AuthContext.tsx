@@ -47,8 +47,9 @@ interface AuthContextValue {
 
 const ACCOUNTS_STORAGE_KEY = "revayat.accounts.v1";
 const ACTIVE_ACCOUNT_STORAGE_KEY = "revayat.activeAccountId";
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_REVAYAT_API_BASE_URL?.replace(/\/+$/, "") ?? undefined;
+const API_BASE_URL = process.env.NEXT_PUBLIC_REVAYAT_API_BASE_URL
+  ? "/api/remote"
+  : undefined;
 
 const ADMIN_ACCOUNT: Account = {
   id: "revayat-admin",

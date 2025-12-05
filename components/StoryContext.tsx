@@ -59,8 +59,9 @@ interface StoryContextValue {
 
 const STORAGE_KEY = "revayat.stories.v1";
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
-const API_BASE_URL =
-  process.env.NEXT_PUBLIC_REVAYAT_API_BASE_URL?.replace(/\/+$/, "") ?? undefined;
+const API_BASE_URL = process.env.NEXT_PUBLIC_REVAYAT_API_BASE_URL
+  ? "/api/remote"
+  : undefined;
 
 const buildApiUrl = (path: string) => {
   if (!API_BASE_URL) return "";
