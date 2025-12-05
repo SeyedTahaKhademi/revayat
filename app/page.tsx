@@ -155,12 +155,11 @@ export default function Home() {
         <section className="space-y-6">
           <div className="rounded-[28px] bg-gradient-to-br from-rose-500 to-orange-400 p-6 md:p-8 text-white shadow-2xl space-y-4 text-center">
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-black leading-tight">
-              روایت تصویری از ایثار ۱۲ روزه
+              روایتِ مشارکت تعاملی
             </h1>
-            <p className="text-white/90 text-sm md:text-base">
-              در دوازده روزِ آتش و آسمانِ سرخ، روایت ما از میان غبار و نور برخاست؛
-              صدایی که بر ویرانه‌ها ایستاد و از ایثار گفت، از دستانی که در دلِ تاریکی چراغ شدند.
-              این دکلمه، تصویرِ لحظه‌هایی‌ست که فراموش نمی‌شوند.
+            <p className="text-white/90 text-sm md:text-base leading-relaxed">
+              این روایت تعاملی با کمک شما کامل می‌شود؛ هر تصویر، یادداشت یا فایل صوتی می‌تواند پازل ایثار را کامل‌تر کند.
+              از مسیر مشارکت اجتماعی استفاده کنید تا روایت مشترک‌مان را مرحله‌به‌مرحله بسازیم و در اکسپلور با دیگران به اشتراک بگذاریم.
             </p>
             <div className="pt-2">
               <Link
@@ -170,6 +169,48 @@ export default function Home() {
                 مسیر مشارکت اجتماعی
               </Link>
             </div>
+          </div>
+        </section>
+
+        {/* استوری‌های کاربران */}
+        <section className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-semibold uppercase tracking-[0.3em] text-gray-500">
+              Storyline
+            </h2>
+            <Link href="/explore" className="text-xs font-semibold text-rose-500">
+              مشاهده همه
+            </Link>
+          </div>
+          <div className="flex gap-4 overflow-x-auto pb-2">
+            {sampleStories.map((story) => (
+              <div
+                key={story.id}
+                className="flex flex-col items-center gap-2 min-w-[110px]"
+              >
+                <div className="h-24 w-24 rounded-full border-2 border-rose-400 p-0.5 bg-gradient-to-br from-rose-400 to-orange-300">
+                  <div className="h-full w-full rounded-full overflow-hidden bg-gray-100 flex items-center justify-center text-[11px] text-gray-500">
+                    {story.image ? (
+                      <img
+                        src={normalizeImageSrc(story.image)}
+                        alt={story.author}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      'Story'
+                    )}
+                  </div>
+                </div>
+                <div className="text-center">
+                  <p className="text-xs font-semibold text-gray-900 line-clamp-1">
+                    {story.author}
+                  </p>
+                  <p className="text-[11px] text-gray-500 line-clamp-1">
+                    {story.subtitle}
+                  </p>
+                </div>
+              </div>
+            ))}
           </div>
         </section>
 
@@ -372,3 +413,23 @@ export default function Home() {
     </Layout>
   );
 }
+const sampleStories = [
+  {
+    id: 'story-1',
+    author: 'روایت کوچه شهدا',
+    subtitle: 'روز اول مقاومت',
+    image: '/images/story-placeholder-1.jpg',
+  },
+  {
+    id: 'story-2',
+    author: 'گزارش نخلستان',
+    subtitle: 'عکس‌های پشت صحنه',
+    image: '/images/story-placeholder-2.jpg',
+  },
+  {
+    id: 'story-3',
+    author: 'یادداشت آرش',
+    subtitle: 'نامه‌ای برای مادر',
+    image: '/images/story-placeholder-3.jpg',
+  },
+];
