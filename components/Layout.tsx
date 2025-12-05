@@ -1,3 +1,4 @@
+// تمامی حقوق این فایل متعلق به تیم شهید بابایی است.
 // src/components/Layout.tsx
 
 import React from 'react';

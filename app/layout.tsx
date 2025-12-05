@@ -1,4 +1,4 @@
-// src/app/layout.tsx
+// تمامی حقوق این فایل متعلق به تیم شهید بابایی است.
 
 import type { Metadata } from "next";
 import "./globals.css"; // فایل استایل Tailwind

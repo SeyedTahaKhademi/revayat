@@ -1,3 +1,4 @@
+// تمامی حقوق این فایل متعلق به تیم شهید بابایی است.
 'use client';
 
 // src/components/BottomNavBar.tsx (نسخه باز طراحی شده)

@@ -1,3 +1,4 @@
+// تمامی حقوق این فایل متعلق به تیم شهید بابایی است.
 'use client';
 
 import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';

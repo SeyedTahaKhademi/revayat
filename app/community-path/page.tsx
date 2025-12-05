@@ -1,3 +1,4 @@
+// تمامی حقوق این فایل متعلق به تیم شهید بابایی است.
 'use client';
 
 import Layout from '@/components/Layout';

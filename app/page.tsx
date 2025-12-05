@@ -1,5 +1,6 @@
 // src/app/page.tsx (نسخه بازطراحی‌شده)
 
+// تمامی حقوق این فایل متعلق به تیم شهید بابایی است.
 'use client';
 
 import Link from 'next/link';
