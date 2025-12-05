@@ -7,6 +7,8 @@ import { useExplore } from '@/components/ExploreContext';
 import { useSettings } from '@/components/SettingsContext';
 import { useFollow } from '@/components/FollowContext';
 import { useStories } from '@/components/StoryContext';
+import type { Story } from '@/components/StoryContext';
+import { useStories } from '@/components/StoryContext';
 import Link from 'next/link';
 import Image from 'next/image';
 
@@ -56,7 +58,7 @@ const storyTimeRemaining = (value: string) => {
 export default function ProfilePage() {
   const { currentUser, login, register, logout, accounts } = useAuth();
   const { posts, createPost } = useExplore();
-  const { stories, addStory } = useStories();
+  const { stories, addStory, updateStory, deleteStory } = useStories();
   const { profile, setProfile } = useSettings();
   const { getFollowers, getFollowing, toggleFollow, isFollowing } = useFollow();
 
@@ -75,6 +77,7 @@ export default function ProfilePage() {
   const postInputRef = useRef<HTMLInputElement>(null);
   const [storyComposer, setStoryComposer] = useState({ caption: '', media: '' });
   const storyInputRef = useRef<HTMLInputElement>(null);
+  const [editingStory, setEditingStory] = useState<Story | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const [openList, setOpenList] = useState<'followers' | 'following' | null>(null);
 
@@ -199,21 +202,64 @@ export default function ProfilePage() {
       setAuthError('تصویر یا ویدیو برای استوری انتخاب نشده است.');
       return;
     }
-    const result = addStory({
-      authorId: currentUser.id,
-      authorName: currentUser.username,
-      authorAvatar: profile.avatar,
-      media: storyComposer.media,
-      caption: storyComposer.caption,
-    });
-    if (!result.success) {
-      setAuthError(result.message || 'استوری ارسال نشد.');
-      return;
+    if (editingStory) {
+      const result = updateStory(editingStory.id, {
+        userId: currentUser.id,
+        caption: storyComposer.caption,
+        media: storyComposer.media || editingStory.media,
+      });
+      if (!result.success) {
+        setAuthError(result.message || 'استوری ویرایش نشد.');
+        return;
+      }
+      setAuthError(null);
+      setAuthSuccess('استوری شما ویرایش شد.');
+      setEditingStory(null);
+    } else {
+      const result = addStory({
+        authorId: currentUser.id,
+        authorName: currentUser.username,
+        authorAvatar: profile.avatar,
+        media: storyComposer.media,
+        caption: storyComposer.caption,
+      });
+      if (!result.success) {
+        setAuthError(result.message || 'استوری ارسال نشد.');
+        return;
+      }
+      setAuthError(null);
+      setAuthSuccess('استوری شما ثبت شد و به مدت ۲۴ ساعت نمایش داده می‌شود.');
     }
-    setAuthError(null);
-    setAuthSuccess('استوری شما ثبت شد و به مدت ۲۴ ساعت نمایش داده می‌شود.');
     setStoryComposer({ caption: '', media: '' });
     if (storyInputRef.current) storyInputRef.current.value = '';
+  };
+
+  const handleEditStory = (story: Story) => {
+    setStoryComposer({ caption: story.caption || '', media: story.media });
+    setEditingStory(story);
+  };
+
+  const handleCancelEditStory = () => {
+    setEditingStory(null);
+    setStoryComposer({ caption: '', media: '' });
+    if (storyInputRef.current) storyInputRef.current.value = '';
+  };
+
+  const handleDeleteStory = (storyId: string) => {
+    if (!currentUser) {
+      setAuthError('برای حذف استوری ابتدا وارد شوید.');
+      return;
+    }
+    const result = deleteStory(storyId, currentUser.id);
+    if (!result.success) {
+      setAuthError(result.message || 'استوری حذف نشد.');
+      return;
+    }
+    if (editingStory?.id === storyId) {
+      handleCancelEditStory();
+    }
+    setAuthError(null);
+    setAuthSuccess('استوری حذف شد.');
   };
 
   const handleManageFollow = (targetId: string) => {
@@ -584,7 +630,14 @@ export default function ProfilePage() {
 
             <section className="rounded-[32px] border border-white/60 bg-white/90 p-5 shadow-xl space-y-4">
               <div className="flex items-center justify-between">
-                <h2 className="text-lg font-bold">استوری ۲۴ ساعته</h2>
+                <div className="space-y-1">
+                  <h2 className="text-lg font-bold">استوری ۲۴ ساعته</h2>
+                  {editingStory && (
+                    <p className="text-xs text-rose-500 font-semibold">
+                      در حال ویرایش استوری: {editingStory.caption || editingStory.id}
+                    </p>
+                  )}
+                </div>
                 <span className="text-xs text-gray-500">{myStories.length} استوری فعال</span>
               </div>
               <div className="space-y-3">
@@ -607,8 +660,17 @@ export default function ProfilePage() {
                     onClick={handleShareStory}
                     className="flex-1 rounded-2xl bg-rose-600 text-white px-4 py-3 text-sm font-bold"
                   >
-                    انتشار استوری
+                    {editingStory ? 'ذخیره تغییرات' : 'انتشار استوری'}
                   </button>
+                  {editingStory && (
+                    <button
+                      type="button"
+                      onClick={handleCancelEditStory}
+                      className="flex-1 rounded-2xl border border-gray-200 px-4 py-3 text-sm font-semibold text-gray-600"
+                    >
+                      انصراف از ویرایش
+                    </button>
+                  )}
                 </div>
                 <input
                   ref={storyInputRef}
@@ -655,6 +717,20 @@ export default function ProfilePage() {
                           </p>
                           <p className="text-xs text-gray-500">{storyTimeRemaining(story.createdAt)}</p>
                         </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleEditStory(story)}
+                          className="rounded-full border border-gray-300 px-3 py-1 text-xs font-semibold text-gray-700"
+                        >
+                          ویرایش
+                        </button>
+                        <button
+                          onClick={() => handleDeleteStory(story.id)}
+                          className="rounded-full border border-rose-200 px-3 py-1 text-xs font-semibold text-rose-600"
+                        >
+                          حذف
+                        </button>
                       </div>
                     </div>
                   ))

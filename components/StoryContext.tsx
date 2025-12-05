@@ -49,6 +49,11 @@ interface StoryContextValue {
     storyId: string,
     payload: { userId: string; userName: string; message: string }
   ) => { success: boolean; message?: string };
+  updateStory: (
+    storyId: string,
+    payload: { userId: string; media?: string; caption?: string }
+  ) => { success: boolean; message?: string };
+  deleteStory: (storyId: string, userId: string) => { success: boolean; message?: string };
 }
 
 const STORAGE_KEY = "revayat.stories.v1";
@@ -331,14 +336,55 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({
     []
   );
 
+  const updateStory = useCallback(
+    (
+      storyId: string,
+      { userId, media, caption }: { userId: string; media?: string; caption?: string }
+    ) => {
+      const target = stories.find((story) => story.id === storyId);
+      if (!target) return { success: false, message: "استوری پیدا نشد." };
+      if (target.authorId !== userId) {
+        return { success: false, message: "فقط صاحب استوری می‌تواند ویرایش کند." };
+      }
+      setStories((prev) =>
+        prev.map((story) =>
+          story.id === storyId
+            ? {
+                ...story,
+                caption: caption !== undefined ? caption : story.caption,
+                media: media || story.media,
+              }
+            : story
+        )
+      );
+      return { success: true, message: "استوری ویرایش شد." };
+    },
+    [stories]
+  );
+
+  const deleteStory = useCallback(
+    (storyId: string, userId: string) => {
+      const target = stories.find((story) => story.id === storyId);
+      if (!target) return { success: false, message: "استوری پیدا نشد." };
+      if (target.authorId !== userId) {
+        return { success: false, message: "فقط صاحب استوری می‌تواند حذف کند." };
+      }
+      setStories((prev) => prev.filter((story) => story.id !== storyId));
+      return { success: true, message: "استوری حذف شد." };
+    },
+    [stories]
+  );
+
   const value = useMemo(
     () => ({
       stories,
       addStory,
       toggleStoryLike,
       sendStoryReply,
+      updateStory,
+      deleteStory,
     }),
-    [stories, addStory, toggleStoryLike, sendStoryReply]
+    [stories, addStory, toggleStoryLike, sendStoryReply, updateStory, deleteStory]
   );
 
   return <StoryContext.Provider value={value}>{children}</StoryContext.Provider>;

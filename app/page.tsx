@@ -128,6 +128,7 @@ export default function Home() {
   const { stories } = useStories();
   const [saveBanner, setSaveBanner] = useState<string | null>(null);
   const [isMounted, setIsMounted] = useState(false);
+  const [storiesMounted, setStoriesMounted] = useState(false);
   const featuredExplorePosts = useMemo(() => {
     if (!isMounted) return [];
     return [...posts].sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1)).slice(0, 3);
@@ -135,6 +136,10 @@ export default function Home() {
 
   useEffect(() => {
     setIsMounted(true);
+  }, []);
+
+  useEffect(() => {
+    setStoriesMounted(true);
   }, []);
 
   useEffect(() => {
@@ -189,12 +194,13 @@ export default function Home() {
               </Link>
             </div>
           </div>
-          {stories.length ? (
-            <div className="flex gap-4 overflow-x-auto pb-2">
-              {stories.map((story) => (
-                <Link
-                  key={story.id}
-                  href={`/stories?story=${story.id}`}
+          {storiesMounted ? (
+            stories.length ? (
+              <div className="flex gap-4 overflow-x-auto pb-2">
+                {stories.map((story) => (
+                  <Link
+                    key={story.id}
+                    href={`/stories?story=${story.id}`}
                   className="flex flex-col items-center gap-2 min-w-[110px]"
                 >
                   <div className="h-24 w-24 rounded-full border-2 border-rose-400 p-0.5 bg-gradient-to-br from-rose-400 to-orange-300">
@@ -218,12 +224,17 @@ export default function Home() {
                       {relativeTime(story.createdAt)}
                     </p>
                   </div>
-                </Link>
-              ))}
-            </div>
+                  </Link>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-dashed border-gray-200 bg-white/70 px-4 py-6 text-center text-sm text-gray-500">
+                هنوز استوری فعالی وجود ندارد. از طریق پروفایل خود یک استوری تصویری ثبت کنید.
+              </div>
+            )
           ) : (
             <div className="rounded-2xl border border-dashed border-gray-200 bg-white/70 px-4 py-6 text-center text-sm text-gray-500">
-              هنوز استوری فعالی وجود ندارد. از طریق پروفایل خود یک استوری تصویری ثبت کنید.
+              در حال بارگذاری استوری‌ها...
             </div>
           )}
         </section>
