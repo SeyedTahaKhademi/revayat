@@ -9,6 +9,14 @@ import React, {
   useState,
 } from "react";
 
+export interface StoryReply {
+  id: string;
+  fromId: string;
+  fromName: string;
+  message: string;
+  createdAt: string;
+}
+
 export interface Story {
   id: string;
   authorId: string;
@@ -17,6 +25,8 @@ export interface Story {
   media: string;
   caption?: string;
   createdAt: string;
+  likes: string[];
+  replies: StoryReply[];
 }
 
 interface AddStoryPayload {
@@ -30,6 +40,15 @@ interface AddStoryPayload {
 interface StoryContextValue {
   stories: Story[];
   addStory: (payload: AddStoryPayload) => { success: boolean; message?: string };
+  toggleStoryLike: (storyId: string, userId: string) => {
+    success: boolean;
+    liked?: boolean;
+    message?: string;
+  };
+  sendStoryReply: (
+    storyId: string,
+    payload: { userId: string; userName: string; message: string }
+  ) => { success: boolean; message?: string };
 }
 
 const STORAGE_KEY = "revayat.stories.v1";
@@ -87,6 +106,24 @@ const fetchRemoteStories = async (): Promise<Story[] | null> => {
     return pruneStories(
       payload.map((item) => ({
         ...item,
+        likes: Array.isArray(item.likes)
+          ? item.likes.filter((id: unknown): id is string => typeof id === "string")
+          : [],
+        replies: Array.isArray(item.replies)
+          ? item.replies
+              .filter(
+                (reply: any) =>
+                  reply &&
+                  typeof reply.id === "string" &&
+                  typeof reply.fromId === "string" &&
+                  typeof reply.fromName === "string" &&
+                  typeof reply.message === "string"
+              )
+              .map((reply: any) => ({
+                ...reply,
+                createdAt: reply.createdAt || new Date().toISOString(),
+              }))
+          : [],
         createdAt: item.createdAt || new Date().toISOString(),
       }))
     );
@@ -226,9 +263,70 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({
         media,
         caption,
         createdAt: new Date().toISOString(),
+        likes: [],
+        replies: [],
       };
       setStories((prev) => pruneStories([story, ...prev]));
       return { success: true };
+    },
+    []
+  );
+
+  const toggleStoryLike = useCallback(
+    (storyId: string, userId: string) => {
+      if (!userId) {
+        return { success: false, message: "ابتدا وارد حساب شوید." };
+      }
+      let liked = false;
+      setStories((prev) =>
+        prev.map((story) => {
+          if (story.id !== storyId) return story;
+          const already = story.likes.includes(userId);
+          liked = !already;
+          const likes = already
+            ? story.likes.filter((id) => id !== userId)
+            : [...story.likes, userId];
+          return { ...story, likes };
+        })
+      );
+      return {
+        success: true,
+        liked,
+        message: liked ? "استوری پسند شد." : "پسند شما حذف شد.",
+      };
+    },
+    []
+  );
+
+  const sendStoryReply = useCallback(
+    (
+      storyId: string,
+      { userId, userName, message }: { userId: string; userName: string; message: string }
+    ) => {
+      if (!userId) {
+        return { success: false, message: "ابتدا وارد حساب شوید." };
+      }
+      const trimmed = message.trim();
+      if (!trimmed) {
+        return { success: false, message: "متن پیام خالی است." };
+      }
+      const reply: StoryReply = {
+        id: `reply-${Date.now().toString(36)}-${Math.random()
+          .toString(36)
+          .slice(2, 8)}`,
+        fromId: userId,
+        fromName: userName,
+        message: trimmed,
+        createdAt: new Date().toISOString(),
+      };
+      setStories((prev) =>
+        prev.map((story) =>
+          story.id === storyId
+            ? { ...story, replies: [...story.replies, reply] }
+            : story
+        )
+      );
+      return { success: true, message: "پیام ارسال شد." };
     },
     []
   );
@@ -237,8 +335,10 @@ export const StoryProvider: React.FC<{ children: React.ReactNode }> = ({
     () => ({
       stories,
       addStory,
+      toggleStoryLike,
+      sendStoryReply,
     }),
-    [stories, addStory]
+    [stories, addStory, toggleStoryLike, sendStoryReply]
   );
 
   return <StoryContext.Provider value={value}>{children}</StoryContext.Provider>;
